@@ -1,0 +1,23 @@
+{
+  "name": "dopees-core",
+  "version": "1.0.0",
+  "desciption": "Dopees packaging and delivery logic.",
+  "author": {
+    "name": "Artyom Antyipin",
+    "email": "artyom.szasa@gmail.com"
+  },
+  "contributors": [
+    {
+      "name": "Marton Kakas",
+      "email": "kakas.marton@gmail.com"
+    }
+  ],
+  "homepage": "https://github.com/artyomszasa/dopees-core",
+  "bugs": "https://github.com/artyomszasa/dopees-core/issues",
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/artyomszasa/dopees-core.git"
+  }
+}
