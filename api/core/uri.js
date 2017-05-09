@@ -33,6 +33,12 @@ dope.initComponent({
             }
         };
         dope.Uri = class Uri {
+            static create (uri) {
+                if (uri instanceof dope.Uri) {
+                    return uri;
+                }
+                return new dope.Uri(uri);
+            }
             constructor (raw) {
                 parse(this, raw);
             }
