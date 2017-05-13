@@ -321,7 +321,7 @@
             });
             win.addEventListener(fw.logEvent, evt => {
                 if (win.console && win.console.log) {
-                    const data = evt.detial;
+                    const data = evt.detail;
                     const severity = data.severity;
                     const log = win.console[severity] || win.console.log || (() => {});
                     log.call(win.console, data.message);
