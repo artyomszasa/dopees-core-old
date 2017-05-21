@@ -5,7 +5,7 @@ dope.initComponent({
     init (dope) {
         'use strict';
         // see: https://tools.ietf.org/html/rfc3986
-        const regexUri = /^([a-z][a-z0-9+.-]*):(\/\/(([!$&\\'()*,;=a-z0-9._~-]|%[0-9a-f][0-9a-f])*)(\:([0-9]+))?)?(([\/!$&\\'()*,;=:@a-z0-9._~-]|%[0-9a-f][0-9a-f])*)(\?([!$&\\'()*,;=:@a-z0-9._~\/?-]|%[0-9a-f][0-9a-f])*)?(\#.*)?$/i;
+        const regexUri = /^(([a-z][a-z0-9+.-]*):)?(\/\/(([!$&\\'()*,;=a-z0-9._~-]|%[0-9a-f][0-9a-f])*)(\:([0-9]+))?)?(([\/!$&\\'()*,;=:@a-z0-9._~-]|%[0-9a-f][0-9a-f])*)(\?([!$&\\'()*,;=:@a-z0-9._~\/?-]|%[0-9a-f][0-9a-f])*)?(\#.*)?$/i;
 
         const parseQuery = (params, raw) => {
             raw
@@ -24,12 +24,12 @@ dope.initComponent({
         const parse = (uri, raw) => {
             const m = regexUri.exec(raw);
             if (m) {
-                uri.scheme = m[1];
-                uri.host = m[3];
-                uri.path = m[7];
-                uri.port = parseInt(m[6], 10) || dope.Uri.defaultPorts[uri.scheme] || 0;
-                uri.query = (m[9] && m[9].substr(1) || '');
-                uri.fragment = (m[11] && m[11].substr(1) || '');
+                uri.scheme = m[2];
+                uri.host = m[4];
+                uri.path = m[8];
+                uri.port = parseInt(m[7], 10) || dope.Uri.defaultPorts[uri.scheme] || 0;
+                uri.query = (m[10] && m[10].substr(1) || '');
+                uri.fragment = (m[12] && m[12].substr(1) || '');
             }
         };
         dope.Uri = class Uri {
@@ -41,6 +41,12 @@ dope.initComponent({
             }
             constructor (raw) {
                 parse(this, raw);
+            }
+            get isRelative () {
+                return !this.scheme;
+            }
+            get isAbsolute () {
+                return !!this.scheme;
             }
             get authority () {
                 if (this.port && this.port !== dope.Uri.defaultPorts[this.scheme]) {
@@ -63,7 +69,8 @@ dope.initComponent({
                 const queryString = query ? `?${query}` : '';
                 const fragment = this.fragment ? `#${this.fragment}` : '';
                 const authority = this.authority ? `//${this.authority}` : '';
-                return `${this.scheme}:${authority}${this.path}${queryString}${fragment}`;
+                const scheme = this.scheme ? `${this.scheme}:` : '';
+                return `${scheme}${authority}${this.path}${queryString}${fragment}`;
             }
             set href (href) {
                 parse(this, href);
