@@ -16,7 +16,7 @@ dope.initComponent({
              * @param {Element} node - target node.
              */
             dope.ClassList = class {
-                constructor(node) {
+                constructor (node) {
                     if (!node) {
                         throw new TypeError("Node must be defined");
                     }
@@ -25,10 +25,10 @@ dope.initComponent({
                     }
                     this.node = node;
                 }
-                parse() {
+                parse () {
                     return this.node.className.split(ws);
                 }
-                apply(classNames) {
+                apply (classNames) {
                     this.className = classNames.join(' ');
                 }
                 /**
@@ -37,7 +37,7 @@ dope.initComponent({
                  *
                  * @param {...String} classes - Class values to add.
                  */
-                add(...classes) {
+                add (...classes) {
                     const toAdd = classes.reduce((a, b) => a.concat(b), []);
                     const actual = this.parse();
                     toAdd.forEach(cls => {
@@ -52,7 +52,7 @@ dope.initComponent({
                  *
                  * @param {...String} classes - Class values to remove.
                  */
-                remove(...classes) {
+                remove (...classes) {
                     const toRemove = classes.reduce((a, b) => a.concat(b), []);
                     const actual = this.parse();
                     toRemove.forEach(cls => {
@@ -69,7 +69,7 @@ dope.initComponent({
                  * @param {Number} index - Index of the class value to return.
                  * @return {undefined|String} Either class value at the specified position or undefined.
                  */
-                item(index) {
+                item (index) {
                     return this.parse()[index];
                 }
                 /**
@@ -86,7 +86,7 @@ dope.initComponent({
                  * @param {String} className - Class value to set or remove.
                  * @param {Boolean} force - Whether to set or to remove the specified class.
                  */
-                toggle(...args) {
+                toggle (...args) {
                     var result;
                     if (0 === args.length) {
                         return;
@@ -118,10 +118,10 @@ dope.initComponent({
                  *
                  * @param {String} className - Value to check.
                  */
-                contains(cls) {
+                contains (cls) {
                     return -1 !== this.parse().indexOf(cls);
                 }
-            }
+            };
 
             Object.def(Element.prototype, {
                 /**
@@ -133,7 +133,7 @@ dope.initComponent({
                  */
                 classList: {
                     enumerable: true,
-                    get() {
+                    get () {
                         var classList = instances.get(this);
                         if (classList) {
                             return classList;
@@ -143,7 +143,7 @@ dope.initComponent({
                         return classList;
                     }
                 }
-            })
+            });
         }
     })
 })
