@@ -1,11 +1,11 @@
 /*global dope window*/
 
 dope.initComponent({
-    name: "extensions.array",
+    name: "extensions.string",
     init (dope) {
         "use strict";
         if (!String.prototype.localeCompare || 0 !== "a".localeCompare("A", undefined, { sensitivity: 'accent'})) {
-            dope.pushMsg("Polyfilling String.localeCompare: only cae insensitive comparison will be supported!");
+            dope.pushMsg("Polyfilling String.localeCompare: only case insensitive comparison will be supported!");
             String.prototype.localeCompare = function (other, locales, options) {
                 const opts = Object.assign({
                     sensitivity: "base"

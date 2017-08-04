@@ -1,7 +1,7 @@
 /*global dope window*/
 
 dope.initComponent({
-    name: "polyfill.weakmap",
+    name: "polyfill.fetch",
     depends: ["extensions.string", "extensions.array"],
     polyfillHeaders (dope, mkKey, ciEq, win) {
         const keyData = mkKey("data");
