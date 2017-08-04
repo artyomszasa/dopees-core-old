@@ -21,7 +21,7 @@ dope.initComponent({
 
         win.Headers = class Headers {
             constructor (init, isImmutable) {
-                Object.defineProperty(keyData, {
+                Object.defineProperty(this, keyData, {
                     value: [],
                     writable: true
                 });
@@ -90,8 +90,9 @@ dope.initComponent({
         var keyBody = mkKey("body");
         win.Request = class Request {
             constructor (input, init) {
+                const that = this;
                 const def = function (key, value) {
-                    Object.defineProperty(self, key, {
+                    Object.defineProperty(that, key, {
                         value: value,
                         writable: false,
                         configurable: false,
@@ -289,14 +290,14 @@ dope.initComponent({
                                 reject(e);
                             }
                         }
-                        xhr.open(request.method || 'POST', request.url, true);
-                        request.headers.entries().forEach(p => xhr.setRequestHeader(p[0], p[1]));
-                        if (request.rawBody) {
-                            xhr.send(request.rawBody);
-                        } else {
-                            xhr.send();
-                        }
                     };
+                    xhr.open(request.method || 'POST', request.url, true);
+                    request.headers.entries().forEach(p => xhr.setRequestHeader(p[0], p[1]));
+                    if (request.rawBody) {
+                        xhr.send(request.rawBody);
+                    } else {
+                        xhr.send();
+                    }
                 });
             }
             return win.fetch(new win.Request(input, init));
