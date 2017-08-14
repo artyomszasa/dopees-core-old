@@ -4,6 +4,7 @@ dope.initComponent({
     name: 'core.activation',
     init (dope) {
         'use strict';
+        const rComponentName = /^([^@]+)@([^@]+)$/i;
         const create = (scope, qualifiedName, args, throwOnError) => {
             const ctor = dope.Activator.resolve (scope, qualifiedName);
             if (args && !Array.isArray(args)) {
@@ -38,7 +39,7 @@ dope.initComponent({
         };
         dope.Activator = class Activator {
             static resolve (scope, qualifiedName) {
-                if (!('string' === qualifiedName)) {
+                if (!('string' === typeof qualifiedName)) {
                     throw new Error('Activator: qualifiedName must be specified!');
                 }
                 const implementation = (obj, name) => {
@@ -69,6 +70,19 @@ dope.initComponent({
                     return create(opts.scope, qualifiedName, opts.args || [], false === opts.throwOnError ? false : true);
                 }
                 return tryCreate(qualifiedName, opts.args || [], false === opts.throwOnError ? false : true);
+            }
+            static loadAndResolve (componentQualifiedName) {
+                var loaded;
+                var qualifiedName;
+                const m = rComponentName.exec(componentQualifiedName);
+                if (m) {
+                    qualifiedName = m[1];
+                    loaded = dope.Components.load(m[2]);
+                } else {
+                    qualifiedName = componentQualifiedName;
+                    loaded = Promise.resolve();
+                }
+                return loaded.then(() => dope.Activator.resolve(dope, qualifiedName) || dope.Activator.resolve(window, qualifiedName));
             }
         };
     }
