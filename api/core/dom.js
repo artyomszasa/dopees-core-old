@@ -775,7 +775,7 @@ dope.initComponent({
              * will be used if possible.
              *
              * @method matches
-             * @for Element
+             * @memberof Element
              * @param {String} selectorString - a string representing the
              * selector to test.
              * @return {Boolean} true if the actual elements matches the selector,
@@ -787,8 +787,39 @@ dope.initComponent({
                 if (matchKey) {
                     Element.prototype.matches = Element.prototype[matchKey];
                 } else {
-                    Element.prototype.matches = selector => this.ownerDocument.querySelectorAll(selector).some(x => x === this, this);
+                    Element.prototype.matches = function (selector) {
+                        this.ownerDocument.querySelectorAll(selector).some(x => x === this);
+                    };
                 }
+            }
+
+            /**
+             * Returns the closest ancestor of the current element (or the current
+             * element itself) which matches the selectors given in parameter. If
+             * there isn't such an ancestor, it returns null.
+             *
+             * Polyfill ({@link https://developer.mozilla.org/en-US/docs/Web/API/Element/closest|MDN}).
+             * This method may be implemented by browser. Existing implementation
+             * will be used if possible.
+             *
+             * @method
+             * @memberof Element
+             * @param {String} selectorString - a string representing the
+             * selector to test.
+             * @return {Element} Element which is the closest ancestor of the
+             * selected elements. It may be null.
+             */
+            if (!Element.prototype.closest) {
+                Element.prototype.closest = function (selector) {
+                    let ancestor = this;
+                    do {
+                        if (ancestor.matches(selector)) {
+                            return ancestor;
+                        }
+                        ancestor = ancestor.parentElement || ancestor.parentNode;
+                    } while (ancestor && ancestor instanceof Element);
+                    return null;
+                };
             }
 
             // ******************************************************************
