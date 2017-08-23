@@ -715,6 +715,9 @@ dope.initComponent({
                         return this;
                     }
                     throw new TypeError("Argument must be Node");
+                },
+                remove () {
+                    this.detach();
                 }
             };
 
