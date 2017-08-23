@@ -40,7 +40,7 @@
     const fw = win.dope || {};
     const origin = initOrigin() || '';
     /**
-     * Guarateed always to be _undefined_.
+     * Guaranteed always to be _undefined_.
      *
      * @member {undefined} undef
      * @memberof dope
@@ -291,6 +291,8 @@
                  * @param {String} options.name - Name of the component.
                  * @param {Function} options.init - Component body. Framework object is passed to this function to
                  * ease access to its fascilities.
+                 * @param {String|Array<String>} [options.depends] - Component dependencies to be loaded prior
+                 * initializing the component.
                  */
                 initComponent (options) {
                     fw.run(() => {
@@ -326,7 +328,7 @@
                 /**
                  * Triggers custom dope event used by the dope logging fascility with _error_ severity.
                  *
-                 * @method pushMsg
+                 * @method pushErr
                  * @memberof dope
                  * @param {String|*} error - Either string message or arbitrary object handled by assigned loggers.
                  * Objects should override toString method to provide compatibility with default loggers.
@@ -369,7 +371,7 @@
         });
 
         /**
-         * Loads abritrary javascript through &gt;script&lt; tag. Tracks loaded scripts thus each provided url is
+         * Loads abritrary javascript through &lt;script&gt; tag. Tracks loaded scripts thus each provided url is
          * loaded only once.
          *
          * @method load
@@ -379,7 +381,7 @@
          */
         fw.load = (src) => scripts(src, (resolve, reject) => load(src, resolve, reject));
         /**
-         * Loads abritrary javascript from extrnal directory through &gt;script&lt; tag. Tracks loaded scripts thus
+         * Loads abritrary javascript from extrnal directory through &lt;script&gt; tag. Tracks loaded scripts thus
          * each provided url is loaded only once.
          *
          * @method load

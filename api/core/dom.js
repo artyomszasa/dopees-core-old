@@ -423,7 +423,7 @@ dope.initComponent({
                  * Node(ok) hozzáadása az aktuális node-hoz (első gyerekként).
                  *
                  * @method prepend
-                 * @for Node
+                 * @memberof Node
                  * @chainable
                  * @param node {Node|NodeList|jVersus.FakeNodeList} Hozzáadandó Node(ok).
                  * @return {Node} Vonatkozási Node.
@@ -447,7 +447,7 @@ dope.initComponent({
                  * Node hozzáadása egy másik Node-hez (első gyerekként).
                  *
                  * @method prependTo
-                 * @for Node
+                 * @memberof Node
                  * @chainable
                  * @param parentNode {Node} Node, amelyhez az aktuális elem
                  * hozzáadandó.
@@ -526,7 +526,7 @@ dope.initComponent({
                  * Node lecserélése az aktuális node-ra.
                  *
                  * @method replace
-                 * @for Node
+                 * @memberof Node
                  * @chainable
                  * @param {Node} referenceNode - Lecserélendő Node.
                  * @return {Node} Vonatkozási Node.
@@ -604,7 +604,7 @@ dope.initComponent({
                  * kapott Element-tel, majd hozzáadásra kerül az Element-hez.
                  *
                  * @method wrap
-                 * @for Node
+                 * @memberof Node
                  * @param element {Element} Beágyazáshoz használt Element.
                  * @return {Element} Paraméterben kapott Element.
                 **/
@@ -613,7 +613,7 @@ dope.initComponent({
                  * Element-be.
                  *
                  * @method wrap
-                 * @for Node
+                 * @memberof Node
                  * @param tagName {String} Létrehozandó Element tag-neve.
                  * @return {Element} Létrehozott elem.
                 **/

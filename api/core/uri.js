@@ -32,22 +32,98 @@ dope.initComponent({
                 uri.fragment = (m[12] && m[12].substr(1) || '');
             }
         };
+        /**
+         * Simple and straightforward Uri wrapper.
+         *
+         * @class dope.Uri
+         * @param {String} raw - string representation of the Uri.
+         */
         dope.Uri = class Uri {
+            /**
+             * @member {String} scheme - Gets or sets scheme of the Uri.
+             * @instance
+             * @memberof dope.Uri
+             */
+            /**
+             * @member {String} host - Gets or sets hostname of the Uri.
+             * @instance
+             * @memberof dope.Uri
+             */
+            /**
+             * @member {String} path - Gets or sets path component of the Uri.
+             * @instance
+             * @memberof dope.Uri
+             */
+            /**
+             * @member {Number} port - Gets or sets port of the Uri.
+             * @instance
+             * @memberof dope.Uri
+             */
+            /**
+             * @member {String} fragment - Gets or sets fragment of the Uri.
+             * @instance
+             * @memberof dope.Uri
+             */
+            /**
+             * @member {String} queryParams - Gets or sets query component of the Uri as object. Allows accessing and
+             * manipulating individual arguments within query component.
+             * @instance
+             * @memberof dope.Uri
+             */
+            /**
+             * Alias for {@link dope.Uri.from}.
+             *
+             * @deprecated Use {@link dope.Uri.from} instead.
+             * @method create
+             * @memberof dope.Uri
+             * @static
+             * @param {String|dope.Uri} uri - Source uri.
+             * @returns {dope.Uri} - {@link dope.Uri} object.
+             */
             static create (uri) {
                 if (uri instanceof dope.Uri) {
                     return uri;
                 }
                 return new dope.Uri(uri);
             }
+            /**
+             * Creates {@link dope.Uri} form an argument.
+             *
+             * @method from
+             * @memberof dope.Uri
+             * @static
+             * @param {String|dope.Uri} uri - Source uri.
+             * @returns {dope.Uri} - {@link dope.Uri} object.
+             */
+            static from (uri) {
+                return dope.Uri.create(uri);
+            }
             constructor (raw) {
                 parse(this, raw);
             }
+            /**
+             * Is _true_ if the wrapper Uri is relative.
+             *
+             * @type {Boolean}
+             * @readonly
+             */
             get isRelative () {
                 return !this.scheme;
             }
+            /**
+             * Is _true_ if the wrapper Uri is absolute.
+             *
+             * @type {Boolean}
+             * @readonly
+             */
             get isAbsolute () {
                 return !!this.scheme;
             }
+            /**
+             * Gets or sets authority of the Uri (i.e. hostname and port if non standard).
+             *
+             * @type {String}
+             */
             get authority () {
                 if (this.port && this.port !== dope.Uri.defaultPorts[this.scheme]) {
                     return `${this.host}:${this.port}`;
@@ -64,6 +140,11 @@ dope.initComponent({
                     this.port = parseInt(authority.substr(i + 1), 10) || 0;
                 }
             }
+            /**
+             * Gets or sets the wrapped Uri.
+             *
+             * @type {String}
+             */
             get href () {
                 const query = this.query;
                 const queryString = query ? `?${query}` : '';
@@ -75,6 +156,12 @@ dope.initComponent({
             set href (href) {
                 parse(this, href);
             }
+            /**
+             * Gets or sets query component of the Uri. To access or manipulate individual query arguments use
+             * {@link dope.Uri#queryParams}.
+             *
+             * @type {String}
+             */
             get query () {
                 const queryParams = this.queryParams || {};
                 return Object.keys(queryParams)

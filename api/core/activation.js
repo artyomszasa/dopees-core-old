@@ -37,6 +37,11 @@ dope.initComponent({
             }
             throw new Error(`Activator: could not resolve ${qualifiedName} neither in window nor in dope`);
         };
+        /**
+         * Static class that contains utilities for resolving and creating objects by thier qualified name.
+         *
+         * @class dope.Activator
+         */
         dope.Activator = class Activator {
             static resolve (scope, qualifiedName) {
                 if (!('string' === typeof qualifiedName)) {
@@ -57,11 +62,14 @@ dope.initComponent({
             /**
              * Creates new instance of the class specified by name.
              *
+             * @method create
+             * @memberof dope.Activator
+             * @static
              * @param {string} qualifiedName - Qualified name of the class to instaniate.
              * @param {object} [options] - Activation options.
              * @param {any} [options.scope] - Object to resolve the name within. Both dope and window will be tried if
              * not specified.
-             * @param {Array} [options.args=] - Arguments to pass to the constructor.
+             * @param {Array} [options.args=[]] - Arguments to pass to the constructor.
              * @param {boolean} [options.throwOnError=true] - Whether to throw exception if unable to resolve class.
              */
             static create (qualifiedName, options) {
@@ -71,6 +79,16 @@ dope.initComponent({
                 }
                 return tryCreate(qualifiedName, opts.args || [], false === opts.throwOnError ? false : true);
             }
+            /**
+             * If passed component qualified name (_class name_@_component name_) loads the component and then resolves
+             * the class. Otherwise acts like {@link dope.Activator.create} but returns Promise.
+             *
+             * @method loadAndResolve
+             * @memberof dope.Activator
+             * @static
+             * @param {String} componentQualifiedName - Either component qualified class name or qualified class name.
+             * @returns {Promise} - Promise that contains resolved class if found.
+             */
             static loadAndResolve (componentQualifiedName) {
                 var loaded;
                 var qualifiedName;

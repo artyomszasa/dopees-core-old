@@ -4,6 +4,12 @@ dope.initComponent({
     name: 'extensions.object',
     depends: 'extensions.array',
     init (dope) {
+        'use strict';
+        /**
+         * Native class. Only extension members are covered.
+         * @class Object
+         * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object|MDN}.
+         */
         const deepOptions = Object.freeze({
             deep: true
         });
@@ -19,6 +25,12 @@ dope.initComponent({
         };
 
         /**
+         * Checks two generic objects for equality.
+         *
+         * @memberof Object
+         * @static
+         * @param {*} actual - First object.
+         * @param {*} expected - Second object.
          * @param {object} [options] - Equality comparison options.
          * @param {boolean} [options.nested] - If set objects are compared by references only.
          * @param {boolean} [options.deep] - If set deep comparison is performed.
@@ -69,6 +81,17 @@ dope.initComponent({
             //FIXME: implement
         };
 
+        /**
+         * Checks object for generic equality with another object.
+         *
+         * @method equals
+         * @memberof Object
+         * @instance
+         * @param {*} other - Object to check equality with.
+         * @param {object} [options] - Equality comparison options.
+         * @param {boolean} [options.nested] - If set objects are compared by references only.
+         * @param {boolean} [options.deep] - If set deep comparison is performed.
+         */
         Object.assign(Object.prototype, {
             equals (other, options) {
                 return Object.equals(this, other, options);
