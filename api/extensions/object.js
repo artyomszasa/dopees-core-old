@@ -13,13 +13,18 @@ dope.initComponent({
         const deepOptions = Object.freeze({
             deep: true
         });
+
+        const keyEquals = window.Symbol ? window.Symbol('equals') : '___dope_extensions_equals';
+
+        dope.keyEquals = keyEquals;
+
         const callEquals = (a, b, options) => {
             // if object contains overridden equals function --> use it.
-            if (a.equals) {
-                return a.equals(b, options);
+            if (a[keyEquals]) {
+                return a[keyEquals](b, options);
             }
             if (b.equals) {
-                return b.equals(a, options);
+                return b[keyEquals](a, options);
             }
             return Object.equals(a, b, options);
         };
@@ -93,7 +98,7 @@ dope.initComponent({
          * @param {boolean} [options.deep] - If set deep comparison is performed.
          */
         Object.assign(Object.prototype, {
-            equals (other, options) {
+            [keyEquals]: function (other, options) {
                 return Object.equals(this, other, options);
             }
         });

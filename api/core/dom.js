@@ -688,12 +688,15 @@ dope.initComponent({
             const nodeListExtensions = {
                 addClass (cls) {
                     this.forEach(node => fw.isElement(node) && node.addClass(cls));
+                    return this;
                 },
                 removeClass (cls) {
                     this.forEach(node => fw.isElement(node) && node.removeClass(cls));
+                    return this;
                 },
                 toggleClass (cls) {
                     this.forEach(node => fw.isElement(node) && node.toggleClass(cls));
+                    return this;
                 },
                 detach () {
                     const result = new fw.NodeList();
@@ -718,6 +721,26 @@ dope.initComponent({
                 },
                 remove () {
                     this.detach();
+                },
+                css (key, value) {
+                    if (dope.undef === value) {
+                        if ('string' === typeof key) {
+                            return this[0] && this[0].css(key);
+                        } else {
+                            this.forEach(node => fw.isElement(node) && node.css(key));
+                        }
+                    } else {
+                        this.forEach(node => fw.isElement(node) && node.css(key, value));
+                    }
+                    return this;
+                },
+                on (evt, callback, useCapture) {
+                    this.forEach(node => fw.isElement(node) && node.on(evt, callback, useCapture));
+                    return this;
+                },
+                off (evt, callback, useCapture) {
+                    this.forEach(node => fw.isElement(node) && node.off(evt, callback, useCapture));
+                    return this;
                 }
             };
 

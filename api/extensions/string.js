@@ -76,5 +76,162 @@ dope.initComponent({
                 .join('');
             return decodeURIComponent(fixed);
         };
+
+        /* ------------------------------------------- */
+        /* sprintf */
+
+        const r = {
+            text: /^[^\u0025]+/,
+            percent: /^\u0025{2}/,
+            arg: /^\u0025([+0\u0020\u002d]*)([0-9]*)(\.[0-9]+)?(b|d|i|f|s)/
+        };
+        const fun = {
+            b (arg) {
+                return arg ? 'true' : 'false';
+            },
+            d (arg) {
+                const x = parseInt(arg, 10);
+                const sign = (x < 0) ? '-' : (this.sign && !isNaN(x) ? '+' : '');
+                return `${sign}${Math.abs(x)}`;
+            },
+            f (arg) {
+                const x = parseFloat(arg);
+                const sign = (x < 0) ? '-' : (this.sign && !isNaN(x) ? '+' : '');
+                return (this.precision) ? `${sign}${Math.abs(x).toFixed(this.precision)}` : `${sign}${Math.abs(x)}`;
+            },
+            s (arg) {
+                return arg;
+            }
+        };
+        // aliases
+        Object.assign(fun, {
+            i: fun.d
+        });
+        // cached fun
+        dope.sprintf = function (key) {
+            if (undefined === key) {
+                throw new Error('[sprintf] format must be specified');
+            }
+            const cache = dope.sprintf.cache;
+            if (!(cache[key] && Object.prototype.hasOwnProperty.call(cache, key))) {
+                cache[key] = dope.sprintf.parse(key);
+            }
+            return dope.sprintf.format.call(null, cache[key], arguments);
+        };
+        // cache
+        dope.sprintf.cache = Object.create(null);
+        // format parser
+        dope.sprintf.parse = function (fmt) {
+            var rest = fmt,
+                m,
+                result = [],
+                flags,
+                width,
+                prec,
+                ty,
+                o;
+            while (0 !== rest.length) {
+                m = r.text.exec(rest);
+                if (m) {
+                    result.push(m[0]);
+                } else {
+                    m = r.percent.exec(rest);
+                    if (m) {
+                        result.push('%');
+                    } else {
+                        m = r.arg.exec(rest);
+                        if (m) {
+                            o = Object.create(null);
+                            flags = m[1];
+                            width = m[2];
+                            prec = m[3];
+                            ty = m[4];
+                            if (!fun[ty]) {
+                                throw new Error('[sprintf] invalid type: ' + ty);
+                            }
+                            o.fun = fun[ty];
+                            // flags feldolgozása
+                            if (flags) {
+                                if (-1 !== flags.indexOf('-')) {
+                                    o.left = true;
+                                }
+                                if (-1 !== flags.indexOf('+')) {
+                                    o.sign = true;
+                                }
+                            }
+                            if (width) {
+                                o.width = parseInt(width, 10);
+                                if (-1 !== flags.indexOf('0')) {
+                                    o.pad = '0';
+                                } else {
+                                    o.pad = ' ';
+                                }
+                            }
+                            if (prec) {
+                                o.precision = parseInt(prec.substr(1), 10);
+                            }
+                            result.push(o);
+                        } else {
+                            throw new Error('[sprintf] could not parse: ' + rest);
+                        }
+                    }
+                }
+                rest = rest.substring(m[0].length);
+            } // while
+            return result;
+        }; // parse
+
+        dope.sprintf.format = function (items, args0) {
+            const args = Array.prototype.slice.call(args0, 1);
+            return items.map(function (item) {
+                var s,
+                    i,
+                    pad,
+                    arg;
+                if ('string' === typeof item) {
+                    s = item;
+                } else {
+                    arg = args.shift();
+                    s = item.fun.call(item, arg);
+                    if (item.width) {
+                        i = item.width - s.length;
+                        if (i > 0) {
+                            pad = item.pad.repeat(i);
+                            if (item.left) {
+                                s = s + pad;
+                            } else {
+                                s = pad + s;
+                            }
+                        }
+                    }
+                }
+                return s;
+            }).join('');
+        };
+
+        /* ------------------------------------------------- */
+        /* offset extensions */
+
+        const search = String.prototype.search,
+            exec = RegExp.prototype.exec;
+
+        String.prototype.search = function (regexp, offset) {
+            if (offset) {
+                return search.call(this.substring(offset), regexp);
+            }
+            return search.call(this, regexp);
+        };
+        RegExp.prototype.exec = function (input, offset) {
+            var m;
+            if (offset) {
+                m = exec.call(this, input.substring(offset));
+                if (m) {
+                    m.index = m.index + offset;
+                }
+            } else {
+                m = exec.call(this, input);
+            }
+            return m;
+        };
     }
 });

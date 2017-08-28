@@ -32,5 +32,15 @@ dope.initComponent({
             };
             return iterate(0);
         };
+
+        Promise.prototype.finally = function (action) {
+            return this.then(result => {
+                action && action();
+                return result;
+            }, err => {
+                action && action();
+                return Promise.reject(err);
+            });
+        };
     }
 });
