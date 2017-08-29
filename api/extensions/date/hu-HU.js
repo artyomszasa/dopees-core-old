@@ -1,7 +1,7 @@
 /*global window, dope*/
 
 dope.initComponent({
-    name: 'date.extensions.hu-HU',
+    name: 'extensions.date.hu-HU',
     init (dope) {
         'use strict';
 
