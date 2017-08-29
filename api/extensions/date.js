@@ -190,7 +190,7 @@ dope.initComponent({
                 return this.addMilliseconds(Math.round(hours * Date.MillisecondsInHour));
             },
             addDays (days) {
-                return this.addDays(Math.round(days * Date.MillisecondsInDay));
+                return this.addMilliseconds(Math.round(days * Date.MillisecondsInDay));
             },
             addMonths (months) {
                 var res = this.addDays(0),
