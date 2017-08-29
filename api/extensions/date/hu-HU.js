@@ -60,6 +60,9 @@ dope.initComponent({
             },
             Y (d) {
                 return `${d.year}. ${months[d.month]}`;
+            },
+            MMMM (date) {
+                return months[date.month];
             }
         });
 
