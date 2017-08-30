@@ -174,7 +174,7 @@ dope.initComponent({
             }
         });
 
-        const toString = String.prototype.toString;
+        const toString = Date.prototype.toString;
 
         Object.assign(Date.prototype, {
             addMilliseconds (milliseconds) {
