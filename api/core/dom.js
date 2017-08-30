@@ -639,7 +639,7 @@ dope.initComponent({
             fw.NodeList = class extends Array {
                 constructor (...items) {
                     super();
-                    if (items && items.length) {
+                    if (items && items.length && (items.length !== 1 || 'number' !== typeof items[0])) {
                         items.forEach(function (item, index) {
                             if (!(item instanceof Node)) {
                                 throw new TypeError(`Argument #${index} is not a valid Node.`);
