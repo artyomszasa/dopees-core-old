@@ -237,7 +237,7 @@ dope.initComponent({
                 if ('function' !== typeof loc[fmt]) {
                     throw new dope.Exception(`format ${fmt} is not dupported by localization for ${locale || currentLocale}.`);
                 }
-                return loc[fmt].call(loc[fmt], this);
+                return loc[fmt].call(loc, this);
             }
         });
 
