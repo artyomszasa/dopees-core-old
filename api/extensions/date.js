@@ -100,7 +100,7 @@ dope.initComponent({
                 }
                 throw new TypeError('invalid JSON date.');
             },
-            fromMilliseconds (milliseconds) {
+            fromTime (milliseconds) {
                 const result = new Date();
                 result.setTime(milliseconds);
                 return result;
@@ -178,7 +178,13 @@ dope.initComponent({
 
         Object.assign(Date.prototype, {
             addMilliseconds (milliseconds) {
-                return Date.fromMilliseconds(this.getTime() + milliseconds);
+                const res = Date.fromTime(this.getTime() + milliseconds);
+                const offsetDelta = this.getTimezoneOffset() - res.getTimezoneOffset();
+                if (offsetDelta !== 0) {
+                    const adjust = offsetDelta * Date.MillisecondsInMinute;
+                    res.setTime(res.getTime() - adjust);
+                }
+                return res;
             },
             addSeconds (seconds) {
                 return this.addMilliseconds(Math.round(seconds * Date.MillisecondsInSecond));
