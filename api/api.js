@@ -165,6 +165,49 @@
         const ready = () => {
             const rDot = /\./g;
             const promiseTrue = Promise.resolve(true);
+
+            // npo does not support Promise.all
+            if (!Promise.all) {
+                Promise.all = array => {
+                    const result = [];
+                    const run = i => {
+                        if (array.length === i) {
+                            return  result;
+                        }
+                        return array[i].then(item => {
+                            result[i] = item;
+                            return run(i + 1);
+                        });
+                    };
+                    return run(0);
+                };
+            }
+
+            // npo does not support Promise.race
+            if (!Promise.race) {
+                Promise.race = array => {
+                    return new Promise((reject, resolve) => {
+                        let done = false;
+                        const resolveOnce = result => {
+                            if (!done) {
+                                done = true;
+                                resolve(result);
+                            }
+                        };
+                        const rejectOnce = result => {
+                            if (!done) {
+                                done = true;
+                                reject(result);
+                            }
+                        };
+                        for (let i = 0; i < array.length; i = i + 1) {
+                            array[i].then(resolveOnce, rejectOnce);
+                        }
+                    });
+                };
+            }
+
+
             /**
              * Promise that is resolved once DOM is loaded. If the page is
              * considered not-loaded during the dope initialization then
