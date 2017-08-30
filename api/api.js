@@ -273,70 +273,71 @@
                 }
             };
 
-            Object.assign(fw, {
-                Components: components,
-                /**
-                 * Event name used for framework level logging.
-                 *
-                 * @member {String} logEvent
-                 * @memberof dope
-                 */
-                logEvent: 'dope.log',
-                /**
-                 * Inilializes component. All dope components intended to call this method.
-                 *
-                 * @method initComponent
-                 * @memberof dope
-                 * @param {Object} options - Initialization options.
-                 * @param {String} options.name - Name of the component.
-                 * @param {Function} options.init - Component body. Framework object is passed to this function to
-                 * ease access to its fascilities.
-                 * @param {String|Array<String>} [options.depends] - Component dependencies to be loaded prior
-                 * initializing the component.
-                 */
-                initComponent (options) {
-                    fw.run(() => {
-                        const opts = options || {};
-                        if (!options.name) {
-                            throw new Error('Component name must be specified');
-                        }
-                        const name = options.name;
-                        const init = opts.init || (() => {});
-                        components.load(opts.depends)
-                            .then(() => init.call(opts, fw))
-                            .then(() => components.resolve(name), reason => components.reject(name, reason));
-                    });
-                },
-                /**
-                 * Triggers custom dope event used by the dope logging fascility.
-                 *
-                 * @method pushMsg
-                 * @memberof dope
-                 * @param {String|*} msg - Either string message or arbitrary object handled by assigned loggers.
-                 * Objects should override toString method to provide compatibility with default loggers.
-                 * @param {String} severity - Severity of the message. One of the following: _notice_, _log_, _warn_,
-                 * _error_, _fatal_.
-                 */
-                pushMsg (msg, severity) {
-                    const evt = document.createEvent('CustomEvent');
-                    evt.initCustomEvent(fw.logEvent, false, false, {
-                        message: msg,
-                        severity: severity || 'log'
-                    });
-                    window.dispatchEvent(evt);
-                },
-                /**
-                 * Triggers custom dope event used by the dope logging fascility with _error_ severity.
-                 *
-                 * @method pushErr
-                 * @memberof dope
-                 * @param {String|*} error - Either string message or arbitrary object handled by assigned loggers.
-                 * Objects should override toString method to provide compatibility with default loggers.
-                 */
-                pushErr (err) {
-                    fw.pushMsg(err, 'error');
-                }
-            });
+            fw.Components = components;
+
+            /**
+             * Event name used for framework level logging.
+             *
+             * @member {String} logEvent
+             * @memberof dope
+             */
+            fw.logEvent = 'dope.log';
+
+            /**
+             * Inilializes component. All dope components intended to call this method.
+             *
+             * @method initComponent
+             * @memberof dope
+             * @param {Object} options - Initialization options.
+             * @param {String} options.name - Name of the component.
+             * @param {Function} options.init - Component body. Framework object is passed to this function to
+             * ease access to its fascilities.
+             * @param {String|Array<String>} [options.depends] - Component dependencies to be loaded prior
+             * initializing the component.
+             */
+            fw.initComponent = function (options) {
+                fw.run(() => {
+                    const opts = options || {};
+                    if (!options.name) {
+                        throw new Error('Component name must be specified');
+                    }
+                    const name = options.name;
+                    const init = opts.init || (() => {});
+                    components.load(opts.depends)
+                        .then(() => init.call(opts, fw))
+                        .then(() => components.resolve(name), reason => components.reject(name, reason));
+                });
+            };
+
+            /**
+             * Triggers custom dope event used by the dope logging fascility.
+             *
+             * @method pushMsg
+             * @memberof dope
+             * @param {String|*} msg - Either string message or arbitrary object handled by assigned loggers.
+             * Objects should override toString method to provide compatibility with default loggers.
+             * @param {String} severity - Severity of the message. One of the following: _notice_, _log_, _warn_,
+             * _error_, _fatal_.
+             */
+            fw.pushMsg = (msg, severity) => {
+                const evt = document.createEvent('CustomEvent');
+                evt.initCustomEvent(fw.logEvent, false, false, {
+                    message: msg,
+                    severity: severity || 'log'
+                });
+                window.dispatchEvent(evt);
+            };
+
+            /**
+             * Triggers custom dope event used by the dope logging fascility with _error_ severity.
+             *
+             * @method pushErr
+             * @memberof dope
+             * @param {String|*} error - Either string message or arbitrary object handled by assigned loggers.
+             * Objects should override toString method to provide compatibility with default loggers.
+             */
+            fw.pushErr = (err) => fw.pushMsg(err, 'error');
+
             win.addEventListener(fw.logEvent, evt => {
                 if (win.console && win.console.log) {
                     const data = evt.detail;
