@@ -199,27 +199,41 @@ dope.initComponent({
                 return this.addMilliseconds(Math.round(days * Date.MillisecondsInDay));
             },
             addMonths (months) {
-                var res = this.addDays(0),
-                    m,
-                    y;
-                if (0 < months) {
-                    while (0 < months) {
-                        res = res.addDays(Date.getMonthLength(res.getMonth(), res.getFullYear()) * Math.min(months, 1));
-                        months = months - 1;
-                    }
-                } else {
-                    while (0 > months) {
-                        m = res.getMonth() - 1;
-                        y = res.getFullYear();
-                        if (m < 0) {
-                            m = 11;
-                            y = y - 1;
-                        }
-                        res = res.addDays(Date.getMonthLength(m, y) * Math.max(months, -1));
-                        months = months + 1;
-                    }
+                if (0 === months) {
+                    return this.addDays(0);
                 }
-                return res;
+                if (0 < months) {
+                    const full = Math.floor(months) + this.month;
+                    const fm = full % 12;
+                    const fy = full / 12;
+                    let res = new Date(this.year + fy, fm, this.date, this.hours, this.minutes, this.seconds, this.milliseconds);
+                    const part = months % 1;
+                    if (0 === months) {
+                        return res;
+                    }
+                    return res.addDays(Date.getMonthLength(res.month, res.year) * part);
+                } else {
+                    const abs = Math.abs(months);
+                    let m = this.month - Math.floor(abs);
+                    let y = this.year;
+                    while (0 > m) {
+                        y = y - 1;
+                        m = m + 12;
+                    }
+                    const part = abs % 1;
+                    if (0 === part) {
+                        return new Date(y, m, this.date, this.hours, this.minutes, this.seconds, this.milliseconds);
+                    }
+                    if (0 === m) {
+                        y = y - 1;
+                        m = 11;
+                    } else {
+                        m = m - 1;
+                    }
+                    const days = Date.getMonthLength(m, y);
+                    const toAdd = days * (1 - part);
+                    return new Date(y, m, this.date, this.hours, this.minutes, this.seconds, this.milliseconds).addDays(toAdd);
+                }
             },
             toString (fmt, locale) {
                 var loc;
