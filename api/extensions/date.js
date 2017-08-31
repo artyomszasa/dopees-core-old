@@ -205,8 +205,8 @@ dope.initComponent({
                 if (0 < months) {
                     const full = Math.floor(months) + this.month;
                     const fm = full % 12;
-                    const fy = full / 12;
-                    let res = new Date(this.year + fy, fm, this.date, this.hours, this.minutes, this.seconds, this.milliseconds);
+                    const fy = Math.floor(full / 12);
+                    let res = new Date(this.year + fy, fm, Math.min(Date.getMonthLength(fm, this.year + fy), this.date), this.hours, this.minutes, this.seconds, this.milliseconds);
                     const part = months % 1;
                     if (0 === months) {
                         return res;
