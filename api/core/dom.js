@@ -123,32 +123,35 @@ dope.initComponent({
             try {
                 doc.querySelector(":scope body");
             } catch (e) {
-                const proto = Element.prototype;
-                const regexScope = /(^|,)\s*:scope/;
-                const regexScopeMatch = /((^|,)\s*):scope/g;
-                ["querySelector", "querySelectorAll"].forEach(function (method) {
-                    var uid;
-                    const orig = proto[method];
-                    proto[method] = function (selector) {
-                        var id;
-                        var idGenerated = false;
-                        if (regexScope.test(selector)) {
-                            if (!this.id) {
-                                id = `querySelector_${Date.now()}_${++uid}`;
-                                this.id = id;
-                                idGenerated = true;
-                            } else {
-                                id = this.id;
+                // NOTE: needed due to babel bug...
+                (function () {
+                    const proto = Element.prototype;
+                    const regexScope = /(^|,)\s*:scope/;
+                    const regexScopeMatch = /((^|,)\s*):scope/g;
+                    ["querySelector", "querySelectorAll"].forEach(function (method) {
+                        var uid;
+                        const orig = proto[method];
+                        proto[method] = function (selector) {
+                            var id;
+                            var idGenerated = false;
+                            if (regexScope.test(selector)) {
+                                if (!this.id) {
+                                    id = `querySelector_${Date.now()}_${++uid}`;
+                                    this.id = id;
+                                    idGenerated = true;
+                                } else {
+                                    id = this.id;
+                                }
+                                const newSelector = selector.replace(regexScopeMatch, `$1#${id}`);
+                                const result = doc[method].call(doc, newSelector);
+                                if (idGenerated) {
+                                    this.id = "";
+                                }
+                                return result;
                             }
-                            const newSelector = selector.replace(regexScopeMatch, `$1#${id}`);
-                            const result = doc[method].call(doc, newSelector);
-                            if (idGenerated) {
-                                this.id = "";
-                            }
-                            return result;
-                        }
-                        return orig.call(this, selector);
-                    };
+                            return orig.call(this, selector);
+                        };
+                    });
                 });
             }
 
