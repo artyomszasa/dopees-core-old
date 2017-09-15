@@ -183,7 +183,7 @@
     }, {
         s: String.prototype,
         m: ['repeat'],
-        p: 'string'
+        p: 'str'
     }, {
         s: window,
         m: 'atob btoa'.split(' '),
