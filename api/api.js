@@ -1,13 +1,12 @@
 /*global dopeVars, window, document*/
 
-/**
- * Global namespace for all the dope.
- *
- * @namespace dope
- */
-(function (win, doc, undef) {
-    "use strict";
-    // es6 detection
+(function (w, d, undef) {
+    'use strict';
+
+    // create namespace
+    const dope = w.dope = w.dope || {};
+
+    // check ES6 compatiblity
     const checkES6 = () => {
         if (!Object.freeze || !Object.assign) {
             return false;
@@ -16,443 +15,220 @@
             eval("(function(){(class{});const x = () => 1;for(var b of []){}})");
             return true;
         } catch(e) {
-            if (win.console) {
-                win.console.log("No ES6 support, falling back to ES5.");
-            }
+            w.console && w.console.log("No ES6 support, falling back to ES5.");
             return false;
         }
     };
-    // initializers
-    const missing = [];
-    const initOrigin = () => {
-        try {
-            const element = doc.getElementById('jversus-api');
-            if (element && element.src && 'h' === element.src.substring(0, 1)) {
-                let match = /^https?:\/\/[^\/]+/.exec(element.src);
-                if (match) {
-                    return match[0];
-                }
-            }
-        } catch(e) { }
-        return undef;
-    };
-    // constants
-    const fw = win.dope || {};
-    const origin = initOrigin() || '';
-    /**
-     * Guaranteed always to be _undefined_.
-     *
-     * @member {undefined} undef
-     * @memberof dope
-     */
-    Object.defineProperty(fw, "undef", {
-        value: undef,
-        enumerable: false,
-        writable: false,
-        configurable: false
-    });
-    // **********************************************************************
-    // feature detection
-    {
-        const arrPoly = 'every find filter forEach indexOf lastIndexOf map reduce reduceRight some'.split(' ');
-        const funPoly = ['bind'];
-        const strPoly = ['repeat'];
-        const b64Poly = 'atob btoa'.split(' ');
-        const objPoly = 'assign freeze'.split(' ');
-        const numPoly = 'MIN_SAFE_INTEGER MAX_SAFE_INTEGER isFinite isInteger isNaN isSafeInteger parseFloat parseInt'.split(' ');
-        const check = function (name, proto, keys) {
-            for (let i = 0; i < keys.length; i = i + 1) {
-                if (!proto[keys[i]]) {
-                    missing.push(name);
-                    return;
-                }
-            }
-        };
-        // Array polyfill
-        if (check('arr', Array.prototype, arrPoly)) {
-            if (!Array.isArray) {
-                missing.push('arr');
-            }
-        }
-        // Function polyfill
-        check('fun', win.Function.prototype, funPoly);
-        // String polyfill
-        check('str', String.prototype, strPoly);
-        // base64 polyfill
-        check('b64', win, b64Poly);
-        // Object polyfill
-        check('obj', Object, objPoly);
-        // Number polyfill
-        check('num', Number, numPoly);
-    }
-    // **********************************************************************
-    // Constants
-    let prefix = dopeVars.prefix + ((dopeVars.isES6 && checkES6()) ? "/es6_" : "/es5_") + dopeVars.version;
-    const externalPrefix = prefix + '/external';
-    const promisePolyfillUri = externalPrefix + '/npo.js';
 
-    // **********************************************************************
-    // asynchronous script load implementation for inner use.
+    const prefix = dopeVars.prefix + ((dopeVars.isES6 && checkES6()) ? "/es6_" : "/es5_") + dopeVars.version;
+
+    Object.defineProperties(dope, {
+        prefix: {
+            get () { return prefix; }
+        },
+        undef: {
+            value: undef,
+            configurable: false,
+            writable: false,
+            enumerable: false
+        }
+    });
+
     const head = document.getElementsByTagName('head')[0];
-    const load = (uri, onload, onerror) => {
+    const loadScript = (src, resolve, reject) => {
+        let done = false;
         const scriptElement = document.createElement('script');
-        const onloadOnce = () => {
+        const resolveOnce = () => {
             if (!done) {
                 done = true;
-                if (onload) {
-                    onload(uri);
-                }
+                resolve(src);
             }
         };
-        var done = false;
-        onerror = onerror || win.alert.bind(win);
-        scriptElement.onload = onloadOnce;
-        scriptElement.onerror = () => onerror(uri);
+        const rejectOnce = () => {
+            if (!done) {
+                done = true;
+                reject(src);
+            }
+        };
+        scriptElement.onload = resolveOnce;
+        scriptElement.onerror = rejectOnce;
         scriptElement.onreadystatechange = function () {
             if ('complete' === scriptElement.readyState || 'loaded' === scriptElement.readyState) {
                 // Needed by IE9- for some reason...
                 scriptElement.children;
                 if ('loading' === scriptElement.readyState) {
-                    onerror(uri);
+                    rejectOnce(src);
                 } else {
-                    onloadOnce(uri);
+                    resolveOnce(src);
                 }
             }
         };
         scriptElement.type = 'text\/javascript';
         scriptElement.async = true;
-        if (uri.substring(0, 2) === '//' && origin) {
-            scriptElement.src = (origin + uri.substring(1));
-        } else if (uri.substring(0, 5) === 'http:' || uri.substring(0, 6) === 'https:') {
-            scriptElement.src = uri;
-        } else if (uri[0] === '/') {
-            scriptElement.src = (origin + uri);
-        } else {
-            scriptElement.src = uri;
-        }
+        scriptElement.src = src;
         head.appendChild(scriptElement);
     };
 
-    /**
-     * Origin of the script file (used by cross-domain script loading)
-     *
-     * @member {String} origin
-     * @memberof dope
-     */
-    fw.origin = origin;
-    /**
-     * Alerts fatal error.
-     *
-     * @method die
-     * @memberof dope
-     * @param {String} message - Message of the fatal error.
-     */
-    fw.die = msg => win.alert('Fatal error: ' + msg);
-
-    // 'init'' called when promises has been ensured.
     const init = () => {
-        // internal caching (for script/component loading).
-        const mkCache = init => {
-            const cache = init || {};
-            return (key, factory) => {
-                if (undef === cache[key]) {
-                    cache[key] = new Promise(factory);
-                }
-                return cache[key];
-            };
-        };
-        // 'ready' called when all needed features has been polyfilled.
-        const ready = () => {
-            const rDot = /\./g;
-            const promiseTrue = Promise.resolve(true);
+        // here all required polyfills (Promise, etc...) had been loaded e.g. are safe to use.
 
-            // npo does not support Promise.all
-            if (!Promise.all) {
-                Promise.all = array => {
-                    const result = [];
-                    const run = i => {
-                        if (array.length === i) {
-                            return  result;
-                        }
-                        return array[i].then(item => {
-                            result[i] = item;
-                            return run(i + 1);
-                        });
-                    };
-                    return run(0);
+        dope.ready = new Promise(resolve => {
+            var resolved = false;
+            if (d.readyState === 'complete' || (d.readyState !== 'loading' && !d.documentElement.doScroll)) {
+                // Document has already been loaded.
+                resolve();
+            } else {
+                // Document is still loading -- wait for events (whichever comes first).
+                const resolveOnce = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        d.removeEventListener('DOMContentLoaded', resolveOnce, false);
+                        w.removeEventListener('load', resolveOnce, false);
+                        resolve();
+                    }
                 };
+                d.addEventListener('DOMContentLoaded', resolveOnce, false);
+                w.addEventListener('load', resolveOnce, false);
             }
-
-            // npo does not support Promise.race
-            if (!Promise.race) {
-                Promise.race = array => {
-                    return new Promise((reject, resolve) => {
-                        let done = false;
-                        const resolveOnce = result => {
-                            if (!done) {
-                                done = true;
-                                resolve(result);
-                            }
-                        };
-                        const rejectOnce = result => {
-                            if (!done) {
-                                done = true;
-                                reject(result);
-                            }
-                        };
-                        for (let i = 0; i < array.length; i = i + 1) {
-                            array[i].then(resolveOnce, rejectOnce);
-                        }
-                    });
-                };
-            }
-
-
-            /**
-             * Promise that is resolved once DOM is loaded. If the page is
-             * considered not-loaded during the dope initialization then
-             * both DOMContentLoaded and load events are being watched
-             * and whichever triggered first resolves the promise.
-             *
-             * @member {Promise} ready
-             * @memberof dope
-             */
-            fw.ready = new Promise(resolve => {
-                var resolved = false;
-                if (doc.readyState === 'complete' || (doc.readyState !== 'loading' && !doc.documentElement.doScroll)) {
-                    // Document has already been loaded.
-                    resolve();
-                } else {
-                    // Document is still loading -- wait for events.
-                    const resolveOnce = () => {
-                        if (!resolved) {
-                            resolved = true;
-                            doc.removeEventListener('DOMContentLoaded', resolveOnce, false);
-                            win.removeEventListener('load', resolveOnce, false);
-                            resolve();
-                        }
-                    };
-                    doc.addEventListener('DOMContentLoaded', resolveOnce, false);
-                    win.addEventListener('load', resolveOnce);
-                }
-            });
-            // ****************************************************************
-            // Built-in extensions
-
-            Object.def = Object.defineProperties;
-
-            // ****************************************************************
-            // Extendable exception
-
-            fw.Exception = class Exception extends Error {
-                constructor (message) {
-                    super(message);
-                    this.name = this.constructor.name;
-                    this.message = message;
-                    if (typeof Error.captureStackTrace === 'function') {
-                        Error.captureStackTrace(this, this.constructor);
-                    } else {
-                        this.stack = (new Error(message)).stack;
-                    }
-                }
-            };
-
-            // ****************************************************************
-            // Component manager.
-            const resolvers = {};
-            const rejecters = {};
-            const componentCache = mkCache();
-            const clearHandlers = name => {
-                delete resolvers[name];
-                delete rejecters[name];
-            };
-            const mkComponentUri = name => prefix + '/' + name.replace(rDot, '/') + '.js';
-            /**
-             * Static class that implements components loading.
-             *
-             * @class Components
-             * @memberof dope
-             */
-            const components = {
-                resolve (name) {
-                    const resolve = resolvers[name];
-                    if (!resolve) {
-                        throw new Error('Resolving non-peding component: ' + name);
-                    }
-                    clearHandlers(name);
-                    resolve(name);
-                },
-                reject (name, message) {
-                    const reject = rejecters[name];
-                    if (!reject) {
-                        throw new Error('Rejecting non-peding component: ' + name);
-                    }
-                    clearHandlers(name);
-                    reject(message);
-                },
-                /**
-                 * Loads one or more components.
-                 *
-                 * @method load
-                 * @memberof dope.Components
-                 * @param {String|Array.<String>} component - Either a component name or an array of component names.
-                 * @return {Promise} Promise that is resolved once all components specified be the pararameter are
-                 * successfully loaded.
-                 */
-                load (component) {
-                    if (!component) {
-                        return promiseTrue;
-                    }
-                    if (Array.isArray(component)) {
-                        return Promise.all(component.map(components.load.bind(components)));
-                    }
-                    const self = this;
-                    return componentCache(component, (resolve, reject) => {
-                        const url = mkComponentUri(component);
-                        resolvers[component] = resolve;
-                        rejecters[component] = reject;
-                        fw.load(url).then(null, () => self.reject(component, 'Failed to load: ' + component));
-                    });
-                }
-            };
-
-            fw.Components = components;
-
-            /**
-             * Event name used for framework level logging.
-             *
-             * @member {String} logEvent
-             * @memberof dope
-             */
-            fw.logEvent = 'dope.log';
-
-            /**
-             * Inilializes component. All dope components intended to call this method.
-             *
-             * @method initComponent
-             * @memberof dope
-             * @param {Object} options - Initialization options.
-             * @param {String} options.name - Name of the component.
-             * @param {Function} options.init - Component body. Framework object is passed to this function to
-             * ease access to its fascilities.
-             * @param {String|Array<String>} [options.depends] - Component dependencies to be loaded prior
-             * initializing the component.
-             */
-            fw.initComponent = function (options) {
-                fw.run(() => {
-                    const opts = options || {};
-                    if (!options.name) {
-                        throw new Error('Component name must be specified');
-                    }
-                    const name = options.name;
-                    const init = opts.init || (() => {});
-                    components.load(opts.depends)
-                        .then(() => init.call(opts, fw))
-                        .then(() => components.resolve(name), reason => components.reject(name, reason));
-                });
-            };
-
-            /**
-             * Triggers custom dope event used by the dope logging fascility.
-             *
-             * @method pushMsg
-             * @memberof dope
-             * @param {String|*} msg - Either string message or arbitrary object handled by assigned loggers.
-             * Objects should override toString method to provide compatibility with default loggers.
-             * @param {String} severity - Severity of the message. One of the following: _notice_, _log_, _warn_,
-             * _error_, _fatal_.
-             */
-            fw.pushMsg = (msg, severity) => {
-                const evt = document.createEvent('CustomEvent');
-                evt.initCustomEvent(fw.logEvent, false, false, {
-                    message: msg,
-                    severity: severity || 'log'
-                });
-                window.dispatchEvent(evt);
-            };
-
-            /**
-             * Triggers custom dope event used by the dope logging fascility with _error_ severity.
-             *
-             * @method pushErr
-             * @memberof dope
-             * @param {String|*} error - Either string message or arbitrary object handled by assigned loggers.
-             * Objects should override toString method to provide compatibility with default loggers.
-             */
-            fw.pushErr = (err) => fw.pushMsg(err, 'error');
-
-            win.addEventListener(fw.logEvent, evt => {
-                if (win.console && win.console.log) {
-                    const data = evt.detail;
-                    const severity = data.severity;
-                    const log = win.console[severity] || win.console.log || (() => {});
-                    log.call(win.console, data.message);
-                }
-            }, false);
-
-            /**
-             * Executes provided function once the core functionality has been initialized.
-             *
-             * @method run
-             * @memberof dope
-             * @param {Function} action - function to execute after initialization of the core functionality.
-             */
-            fw.run = f => f(fw);
-            fw._d.forEach(fw.run);
-            delete fw._d;
-        };
-        const scripts = mkCache();
-
-        /**
-         * Web prefix of the components directory.
-         *
-         * @member prefix
-         * @memberof dope
-         */
-        Object.defineProperty(fw, "prefix", {
-            value: prefix,
-            enumerable: true
         });
 
-        /**
-         * Loads abritrary javascript through &lt;script&gt; tag. Tracks loaded scripts thus each provided url is
-         * loaded only once.
-         *
-         * @method load
-         * @memberof dope
-         * @param {String} uri - Script uri to load.
-         * @return {Promise} Promise which is resolved once script has been loaded and rejected if error has occured.
-         */
-        fw.load = (src) => scripts(src, (resolve, reject) => load(src, resolve, reject));
-        /**
-         * Loads abritrary javascript from extrnal directory through &lt;script&gt; tag. Tracks loaded scripts thus
-         * each provided url is loaded only once.
-         *
-         * @method load
-         * @memberof dope
-         * @param {String} name - Script name to load (_prefix_/external/_name_.js).
-         * @return {Promise} Promise which is resolved once script has been loaded and rejected if error has occured.
-         */
-        fw.loadExternal = (name) => fw.load(externalPrefix + '/' + name + '.js');
-
-        // apply polyfills if needed
-        if (missing.length) {
-            const promises = [];
-            // Before polyfills we may not have Array.map...
-            for (let i = 0; i < missing.length; i = i + 1) {
-                promises.push(load(externalPrefix + '/' + missing[i] + '.js'));
+        dope.Exception = class Exception extends Error {
+            constructor (message) {
+                super(message);
+                this.name = this.constructor.name;
+                this.message = message;
+                if (typeof Error.captureStackTrace === 'function') {
+                    Error.captureStackTrace(this, this.constructor);
+                } else {
+                    this.stack = (new Error(message)).stack;
+                }
             }
-            Promise.all(promises).then(ready, fw.die);
-        } else {
-            ready();
-        }
+        };
+
+        // script loader with debouncing
+        const loadedScripts = {};
+        dope.script = src => {
+            if (!loadedScripts[src]) {
+                loadedScripts[src] = new w.Promise((resolve, reject) => loadScript(src, resolve, reject));
+            }
+            return loadedScripts[src];
+        };
+
+        const resolved = w.Promise.resolve();
+
+        // component handling
+        const loadedComponents = {};
+        const cload = name => {
+            if (!loadedComponents[name]) {
+                const src = `${prefix}/${name.replace('.', '/')}.js`;
+                loadedComponents[name] = dope.script(src).then(() => {
+                    return (dope.component.async[name] || w.Promise.resolve()).then(() => src);
+                });
+            }
+            return loadedComponents[name];
+        };
+        dope.component = function () {
+            const a = arguments;
+            if (!a.length) {
+                return resolved;
+            }
+            if (1 === a.length && 'string' === typeof a[0]) {
+                return cload(a[0]);
+            }
+            return w.Promise.all(Array.prototype.slice.apply(a).map(arg => 'string' === typeof arg ? cload(arg) : dope.component(...arg)));
+        };
+        dope.component.async = {};
+        dope.async = (name, initialization) => dope.component.async[name] = initialization;
+
+        // logging
+        dope.eventLog = 'dope-log';
+        dope.pushMsg = (msg, severity) => {
+            const ev = document.createEvent('CustomEvent');
+            ev.initCustomEvent(dope.logEvent, false, false, {
+                message: msg,
+                severity: severity || 'log'
+            });
+            w.dispatchEvent(ev);
+        };
+
+        dope.pushErr = (err) => dope.pushMsg(err, 'error');
+
+        w.addEventListener(dope.logEvent, evt => {
+            if (w.console) {
+                const data = evt.detail;
+                const severity = data.severity;
+                const log = w.console[severity] || w.console.log || (() => {});
+                log.call(w.console, data.message);
+            }
+        }, false);
+        dope.run = f => ('string' === typeof f || Array.isArray(f)) ? dope.component(f) : f(dope);
+        dope._d.forEach(dope.run);
+        delete dope._d;
     };
 
-    if (Object.prototype.hasOwnProperty.call(win, 'Promise')) {
-        init();
-    } else {
-        load(promisePolyfillUri, init, () => fw.die('Could not load Promise polyfill'));
+    // **********************************************************************
+    // Execution starts here!!!
+    // **********************************************************************
+    // polyfill basic functionality
+    const missingFeatures = [];
+    // "must have" features
+    const mustHaveFeatures = [{
+        s: Array.prototype,
+        m: 'every find filter forEach indexOf lastIndexOf map reduce reduceRight some'.split(' '),
+        p: 'arr'
+    }, {
+        s: Array,
+        m: ['isArray'],
+        p: 'isarr'
+    }, {
+        s: String.prototype,
+        m: ['repeat'],
+        p: 'string'
+    }, {
+        s: window,
+        m: 'atob btoa'.split(' '),
+        p: 'b64'
+    }, {
+        s: Function.prototype,
+        m: ['bind'],
+        p: 'fun'
+    }, {
+        s: Object,
+        m: 'assign freeze'.split(' '),
+        p: 'obj'
+    }, {
+        s: Number,
+        m: 'MIN_SAFE_INTEGER MAX_SAFE_INTEGER isFinite isInteger isNaN isSafeInteger parseFloat parseInt'.split(' '),
+        p: 'num'
+    }, {
+        s: window,
+        m: ['Promise'],
+        p: 'promise'
+    }];
+    for (let i = 0; i < mustHaveFeatures.length; i = i + 1) {
+        const x = mustHaveFeatures[i];
+        let missing = false;
+        for (let j = 0; !missing && j < x.m.length; j = j + 1) {
+            if (!x.s[x.m[j]]) {
+                missing = true;
+                missingFeatures.push(x.p);
+            }
+        }
     }
-
-    win.dope = fw;
-}(window, document));
+    if (missingFeatures.length) {
+        // if there is missing required functionality -- load polyfills.
+        let loaded = 0;
+        const onOneLoaded = () => {
+            loaded = loaded + 1;
+            if (loaded === missingFeatures.length) {
+                init();
+            }
+        };
+        for (let i = 0; i < missingFeatures.length; i = i + 1) {
+            const uri = `${prefix}/external/${missingFeatures[i]}.js`;
+            loadScript(uri, onOneLoaded, () => window.alert(`Unable to load polyfill (${uri})`));
+        }
+    } else {
+        init();
+    }
+}(window, document, undefined));

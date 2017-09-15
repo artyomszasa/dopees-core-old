@@ -1,20 +1,18 @@
-/*global dope window*/
+/*global dope dopeVars window*/
 
-dope.initComponent({
-    name: "core.dom",
-    depends: "core.polyfill",
-    init: function (fw) {
-        "use strict";
-        return fw.polyfill(["WeakMap", "DOMParser"]).then(function () {
-            const undef = fw.undefined;
-            const win = window;
-            const doc = document;
-            const todos = [];
-            const regexWS = /\s+/;
+dope.async(
+    dopeVars.component,
+    dope.component('core.polyfill')
+        .then(() => dope.polyfill('WeakMap', 'DOMParser', 'Element.classList'))
+        .then(() => {
+            const undef = dope.undefined,
+                win = window,
+                doc = document,
+                regexWS = /\s+/;
 
             const useOldEvents = (function () {
                 try {
-                    new Event("custom.string");
+                    new Event("some-custom-string");
                     return false;
                 } catch (e) {
                     return true;
@@ -37,7 +35,19 @@ dope.initComponent({
                         return e;
                     };
                 }
-                return (name, opts) => (opts && opts.detail) ? new CustomEvent(name, opts) : new Event(name, opts);
+                return (name, opts) => {
+                    if ('input' === name && win.InputEvent) {
+                        opts = opts || {};
+                        if (undefined === opts.bubbles) {
+                            opts.bubbles = true;
+                        }
+                        return new win.InputEvent('input', opts);
+                    }
+                    if (opts && opts.detail) {
+                        return new CustomEvent(name, opts);
+                    }
+                    new Event(name, opts);
+                };
             }());
 
 
@@ -120,118 +130,110 @@ dope.initComponent({
              * specified group of selectors.
              * @return {NodeList} NodeList containing matching nodes.
              **/
-            try {
-                doc.querySelector(":scope body");
-            } catch (e) {
-                // NOTE: needed due to babel bug...
-                (function () {
-                    const proto = Element.prototype;
-                    const regexScope = /(^|,)\s*:scope/;
-                    const regexScopeMatch = /((^|,)\s*):scope/g;
-                    ["querySelector", "querySelectorAll"].forEach(function (method) {
-                        var uid;
-                        const orig = proto[method];
-                        proto[method] = function (selector) {
-                            var id;
-                            var idGenerated = false;
-                            if (regexScope.test(selector)) {
-                                if (!this.id) {
-                                    id = `querySelector_${Date.now()}_${++uid}`;
-                                    this.id = id;
-                                    idGenerated = true;
-                                } else {
-                                    id = this.id;
+            dope.dom = dope.dom || {};
+            dope.dom.ensueScopedSelection = () => {
+                try {
+                    doc.querySelector(":scope body");
+                } catch (e) {
+                    // NOTE: needed due to babel bug...
+                    (function () {
+                        const proto = Element.prototype;
+                        const regexScope = /(^|,)\s*:scope/;
+                        const regexScopeMatch = /((^|,)\s*):scope/g;
+                        ["querySelector", "querySelectorAll"].forEach(function (method) {
+                            var uid;
+                            const orig = proto[method];
+                            proto[method] = function (selector) {
+                                var id;
+                                var idGenerated = false;
+                                if (regexScope.test(selector)) {
+                                    if (!this.id) {
+                                        id = `querySelector_${Date.now()}_${++uid}`;
+                                        this.id = id;
+                                        idGenerated = true;
+                                    } else {
+                                        id = this.id;
+                                    }
+                                    const newSelector = selector.replace(regexScopeMatch, `$1#${id}`);
+                                    const result = doc[method].call(doc, newSelector);
+                                    if (idGenerated) {
+                                        this.id = "";
+                                    }
+                                    return result;
                                 }
-                                const newSelector = selector.replace(regexScopeMatch, `$1#${id}`);
-                                const result = doc[method].call(doc, newSelector);
-                                if (idGenerated) {
-                                    this.id = "";
-                                }
-                                return result;
-                            }
-                            return orig.call(this, selector);
-                        };
+                                return orig.call(this, selector);
+                            };
+                        });
                     });
-                });
-            }
+                }
+            };
+            dope.dom.ensueScopedSelection();
 
-            todos.push(fw.polyfill("Element.classList").then(function () {
-                const fAddClass = function (cls) {
-                    this.add(cls);
-                };
-                const fRemoveClass = function (cls) {
-                    this.remove(cls);
-                };
-                const fToggleClass = function (cls) {
-                    this.toggle(cls);
-                };
+            Object.assign(Element.prototype, {
+                /**
+                 * Adds one or more css classes to the actual element.
+                 * Multiple classes must be passed as single string separated
+                 * by one or more whitespace character.
+                 *
+                 * @method addClass
+                 * @memberof Element
+                 * @instance
+                 * @chainable
+                 * @param {String} cls - Class(es) to add.
+                 * @return {Element}
+                 */
+                addClass (cls) {
+                    cls.split(regexWS).forEach(cls => this.classList.add(cls));
+                    return this;
+                },
+                /**
+                 * Removes one or more css classes from the actual element.
+                 * Multiple classes must be passed as single string separated
+                 * by one or more whitespace character.
+                 *
+                 * @method removeClass
+                 * @memberof Element
+                 * @instance
+                 * @chainable
+                 * @param {String} cls - Class(es) to remove.
+                 * @return {Element}
+                 */
+                removeClass (cls) {
+                    cls.split(regexWS).forEach(cls => this.classList.remove(cls));
+                    return this;
+                },
+                /**
+                 * Toggles one or more css classes on the actual element.
+                 * Multiple classes must be passed as single string separated
+                 * by one or more whitespace character.
+                 *
+                 * @method toggleClass
+                 * @memberof Element
+                 * @instance
+                 * @chainable
+                 * @param {String} cls - Class(es) to toggle.
+                 * @return {Element}
+                 */
+                toggleClass (cls) {
+                    cls.split(regexWS).forEach(cls => this.classList.toggle(cls));
+                    return this;
+                },
+                /**
+                 * Checks whether the actual element has specified class.
+                 *
+                 * @method hasClass
+                 * @memberof Element
+                 * @instance
+                 * @param {String} cls - Class to check.
+                 * @return {Boolean} true if elements has the special class,
+                 * false otherwise.
+                 */
+                hasClass (cls) {
+                    return this.classList.contains(cls);
+                }
+            });
 
-                Object.assign(Element.prototype, {
-                    /**
-                     * Adds one or more css classes to the actual element.
-                     * Multiple classes must be passed as single string separated
-                     * by one or more whitespace character.
-                     *
-                     * @method addClass
-                     * @memberof Element
-                     * @instance
-                     * @chainable
-                     * @param {String} cls - Class(es) to add.
-                     * @return {Element}
-                     */
-                    addClass (cls) {
-                        cls.split(regexWS).forEach(fAddClass, this.classList);
-                        return this;
-                    },
-                    /**
-                     * Removes one or more css classes from the actual element.
-                     * Multiple classes must be passed as single string separated
-                     * by one or more whitespace character.
-                     *
-                     * @method removeClass
-                     * @memberof Element
-                     * @instance
-                     * @chainable
-                     * @param {String} cls - Class(es) to remove.
-                     * @return {Element}
-                     */
-                    removeClass (cls) {
-                        cls.split(regexWS).forEach(fRemoveClass, this.classList);
-                        return this;
-                    },
-                    /**
-                     * Toggles one or more css classes on the actual element.
-                     * Multiple classes must be passed as single string separated
-                     * by one or more whitespace character.
-                     *
-                     * @method toggleClass
-                     * @memberof Element
-                     * @instance
-                     * @chainable
-                     * @param {String} cls - Class(es) to toggle.
-                     * @return {Element}
-                     */
-                    toggleClass (cls) {
-                        cls.split(regexWS).forEach(fToggleClass, this.classList);
-                        return this;
-                    },
-                    /**
-                     * Checks whether the actual element has specified class.
-                     *
-                     * @method hasClass
-                     * @memberof Element
-                     * @instance
-                     * @param {String} cls - Class to check.
-                     * @return {Boolean} true if elements has the special class,
-                     * false otherwise.
-                     */
-                    hasClass (cls) {
-                        return this.classList.contains(cls);
-                    }
-                });
-            }));
-
-            Object.def(Node.prototype, {
+            Object.defineProperties(Node.prototype, {
                 /**
                  * Gets index of the actual node based on the DOM order.
                  * @var {Number} domIndex
@@ -291,7 +293,7 @@ dope.initComponent({
                  */
                 append (node) {
                     if (undef !== node && null !== node) {
-                        if (fw.isNodeList(node)) {
+                        if (dope.isNodeList(node)) {
                             node.forEach((n) => this.appendChild(n));
                         } else {
                             const ty = typeof node;
@@ -432,7 +434,7 @@ dope.initComponent({
                  * @return {Node} Vonatkozási Node.
                 **/
                 prepend (node) {
-                    if (fw.isNodeList(node)) {
+                    if (dope.isNodeList(node)) {
                         node.toArray().forEach((n) => this.prepend(n));
                     } else {
                         const ty = typeof node;
@@ -639,7 +641,7 @@ dope.initComponent({
              * @constructor
              * @param {...*} [items] - initial set of Nodes to be contained by the list.
              */
-            fw.NodeList = class extends Array {
+            dope.NodeList = class extends Array {
                 constructor (...items) {
                     super();
                     if (items && items.length && (items.length !== 1 || 'number' !== typeof items[0])) {
@@ -656,8 +658,8 @@ dope.initComponent({
                 }
             };
 
-            fw.isNodeList = obj => obj instanceof NodeList || obj instanceof fw.NodeList;
-            fw.isElement = obj => obj instanceof Element;
+            dope.isNodeList = obj => obj instanceof NodeList || obj instanceof dope.NodeList;
+            dope.isElement = obj => obj instanceof Element;
 
             /**
              * Used as callback to forEach methods.
@@ -690,24 +692,24 @@ dope.initComponent({
 
             const nodeListExtensions = {
                 addClass (cls) {
-                    this.forEach(node => fw.isElement(node) && node.addClass(cls));
+                    this.forEach(node => dope.isElement(node) && node.addClass(cls));
                     return this;
                 },
                 removeClass (cls) {
-                    this.forEach(node => fw.isElement(node) && node.removeClass(cls));
+                    this.forEach(node => dope.isElement(node) && node.removeClass(cls));
                     return this;
                 },
                 toggleClass (cls) {
-                    this.forEach(node => fw.isElement(node) && node.toggleClass(cls));
+                    this.forEach(node => dope.isElement(node) && node.toggleClass(cls));
                     return this;
                 },
                 detach () {
-                    const result = new fw.NodeList();
+                    const result = new dope.NodeList();
                     this.forEach(node => result.push(node.detach()));
                     return result;
                 },
                 filter (callback, thisArg) {
-                    const result = new fw.NodeList();
+                    const result = new dope.NodeList();
                     this.forEach((node, index) => {
                         if (callback.call(thisArg || this, node, index, this)) {
                             result.push(node);
@@ -730,25 +732,25 @@ dope.initComponent({
                         if ('string' === typeof key) {
                             return this[0] && this[0].css(key);
                         } else {
-                            this.forEach(node => fw.isElement(node) && node.css(key));
+                            this.forEach(node => dope.isElement(node) && node.css(key));
                         }
                     } else {
-                        this.forEach(node => fw.isElement(node) && node.css(key, value));
+                        this.forEach(node => dope.isElement(node) && node.css(key, value));
                     }
                     return this;
                 },
                 on (evt, callback, useCapture) {
-                    this.forEach(node => fw.isElement(node) && node.on(evt, callback, useCapture));
+                    this.forEach(node => dope.isElement(node) && node.on(evt, callback, useCapture));
                     return this;
                 },
                 off (evt, callback, useCapture) {
-                    this.forEach(node => fw.isElement(node) && node.off(evt, callback, useCapture));
+                    this.forEach(node => dope.isElement(node) && node.off(evt, callback, useCapture));
                     return this;
                 }
             };
 
             Object.assign(NodeList.prototype, nodeListExtensions);
-            Object.assign(fw.NodeList.prototype, nodeListExtensions);
+            Object.assign(dope.NodeList.prototype, nodeListExtensions);
 
             // ******************************************************************
             // Element extensions
@@ -870,7 +872,7 @@ dope.initComponent({
             // ******************************************************************
             // KeyboardEvent
 
-            Object.def(KeyboardEvent.prototype, {
+            Object.defineProperties(KeyboardEvent.prototype, {
                 whichKey: {
                     get () {
                         var res = this.which;
@@ -886,6 +888,5 @@ dope.initComponent({
                     enumerable: true
                 }
             });
-        });
-    }
-});
+        })
+);
